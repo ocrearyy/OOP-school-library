@@ -12,5 +12,4 @@ class Teacher < Person
         else 
             return true
     end 
-
 end
