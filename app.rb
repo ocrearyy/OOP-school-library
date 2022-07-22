@@ -1,86 +1,143 @@
-@class_room = Classroom.new('microverse_one')
-@persons = []
-@books = []
-@rentals = []
-def list_all_books
-  @books.each_with_index { |book, index| puts "#{index} Title: \"#{book.title}\", Author: \"#{book.author}\"" }
-end
+require './book'
+require './student'
+require './teacher'
+require './rental'
 
-def list_all_people
-  @persons.each_with_index do |person, index|
-    puts "#{index} [#{person.class}] Name: #{person.name}, Id: #{person.id}, age: #{person.age},"
+class App
+  def initialize
+    @options = [
+      { id: 1, name: '1 - List all books', action: 'list_books' },
+      { id: 2, name: '2 - List all people', action: 'list_people' },
+      { id: 3, name: '3 - Create a person', action: 'create_person' },
+      { id: 4, name: '4 - Create a book', action: 'create_book' },
+      { id: 5, name: '5 - Create a rental', action: 'create_rental' },
+      { id: 6, name: '6 - List all rentals for a given person id', action: 'list_rentals' },
+      { id: 7, name: '7 - Exit', action: 'exit_app' }
+    ]
+
+    @books = []
+    @people = []
+    @rentals = []
+    puts 'Welcome to School Library App!'
+    puts ''
   end
-end
 
-def create_person
-  print 'Do you want to create a student (1) or a teacher (2)? [Input the number]:'
-  input = gets.chop.to_i
-  if [1, 2].include?(input)
-    print 'age: '
+  def run
+    puts 'Please choose an option by entering a number:'
+    @options.each { |option| puts option[:name] }
+    choice = gets.chomp.to_i
+    action choice
+  end
+
+  def action(choice)
+    if choice > @options.length || choice.zero?
+      (puts 'Invalid option. Please try again.')
+    else
+      @options.each do |option|
+        send(option[:action]) if option[:id] == choice
+      end
+    end
+  end
+
+  def list_books
+    if @books.empty?
+      puts 'There are no books.'
+    else
+      @books.each { |book| puts "Title: #{book.title}, Author: #{book.author}" }
+    end
+    puts ''
+    run
+  end
+
+  def list_people
+    if @people.empty?
+      puts 'There are no people.'
+    else
+      @people.each { |person| puts "[#{person.class}] Name: #{person.name}, ID: #{person.id}, Age: #{person.age}" }
+    end
+    puts ''
+    run
+  end
+
+  def create_person
+    print 'Do you want to create a student (1) or a teacher (2)? [Input the number]: '
+    type = gets.chomp.to_i
+    unless type.between?(1, 2)
+      puts 'Invalid person type.'
+      puts ''
+      run
+      return
+    end
+
+    print 'Age: '
     age = gets.chomp.to_i
     print 'Name: '
     name = gets.chomp
-    case input
-    when 1
-      print 'Hase parent permission [Y/N]: '
-      permission = gets.chomp
-      permission = permission.upcase == 'Y'
-      student = Student.new(age, @class_room, name, permission)
-      @persons.push(student)
-      puts 'Person created  successfully'
-    when 2
-      print 'Specialization: '
-      specialization = gets.chomp
-      teacher = Teacher.new(age, specialization, name)
-      @persons.push(teacher)
-      puts 'Person created  successfully'
+
+    type == 1 ? create_student(age, name) : create_teacher(age, name)
+
+    puts 'Person created successfully!'
+    puts ''
+    run
+  end
+
+  def create_student(age, name)
+    print 'Has parent permission? [Y/N]: '
+    parent_permission = gets.chomp.upcase == 'Y'
+    @people << Student.new(age, nil, name, parent_permission: parent_permission)
+  end
+
+  def create_teacher(age, name)
+    print 'Specialization: '
+    specialization = gets.chomp
+    @people << Teacher.new(age, specialization, name)
+  end
+
+  def create_book
+    print 'Title: '
+    title = gets.chomp
+    print 'Author: '
+    author = gets.chomp
+    @books << Book.new(title, author)
+    puts 'Book created successfully!'
+    puts ''
+    run
+  end
+
+  def create_rental
+    puts 'Select a book from the following list by number: '
+    @books.each_with_index { |book, index| puts "#{index}) Title: #{book.title}, Author: #{book.author}" }
+    selected_book = @books[gets.chomp.to_i]
+    puts ''
+
+    puts 'Select a person from the following list by number (not ID): '
+    @people.each_with_index do |person, index|
+      puts "#{index}) [#{person.class}] Name: #{person.name}, ID: #{person.id}, Age: #{person.age}"
     end
-  else
-    puts 'Invalid input'
+    selected_person = @people[gets.chomp.to_i]
+    puts ''
+
+    print 'Enter the rental date (YYYY/MM/DD): '
+    rental_date = gets.chomp
+    @rentals << Rental.new(rental_date, selected_person, selected_book)
+    print 'Rental created successfully!'
+    puts ''
+    run
   end
-end
 
-def create_book
-  print 'Title: '
-  title = gets.chomp
-  print 'Author: '
-  author = gets.chomp
-  @books.push(Book.new(title, author))
-  puts 'Book created successfuly'
-end
-
-def create_rental
-  puts 'Select a book from the following list by number'
-  list_all_books
-  book_id = gets.chomp
-  book = nil
-  book = @books[book_id.to_i] if book_id.to_i.to_s == book_id && book_id.to_i < @books.length
-  puts 'Select a person from the following list by number (not id)'
-  list_all_people
-  person = nil
-  person_id = gets.chomp
-  person = @persons[person_id.to_i] if person_id.to_i.to_s == person_id && person_id.to_i < @persons.length
-  if book && person
-    print 'Date: '
-    date = gets.chomp
-    @rentals.push(Rental.new(date, book, person))
-    puts 'Rental created successfuly'
-  else
-    puts 'invalid person or book ID'
-  end
-end
-
-def list_all_rentals
-  print 'ID of person: '
-  id = gets.chomp
-  person = @persons.filter { |per| per.id == id.to_i }
-  if person.length.positive?
-    person = person[0]
-    @rentals.each do |rent|
-      puts "date: #{rent.date}, Book: \"#{rent.book.title}\" by #{rent.book.author}" unless rent.person.id != person.id
+  def list_rentals
+    print 'Enter the person ID: '
+    id = gets.chomp.to_i
+    filtered_rentals = @rentals.select do |rental|
+      rental.person.id == id
     end
-  else
-    puts 'No person found with that ID'
+    filtered_rentals.each { |rental| puts "Date: #{rental.date}, Book: #{rental.book.title} by #{rental.book.author}" }
+    puts ''
+    run
   end
-  ''
+
+  def exit_app
+    puts 'Thank you for using this app!'
+    exit
+  end
 end
