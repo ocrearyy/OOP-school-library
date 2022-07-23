@@ -43,7 +43,7 @@ class App
     if @books.empty?
       puts 'There are no books.'
     else
-      @books.each { |book| puts "Title: #{book.title}, Author: #{book.author}" }
+      @book.each { |book| puts "Title: #{book.title}, Author: #{book.author}" }
     end
     puts ''
     run
